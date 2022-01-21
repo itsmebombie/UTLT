@@ -1,0 +1,114 @@
+extract obj_props
+extract $
+let seedRand = 0
+
+// pseudo random number gen
+random = {
+    // next number
+    next: (max: @number = 2^32) {
+        a = 1664525
+        c = 1013904223
+        seedRand = (a * seedRand + c) % max
+        return seedRand
+    },
+    // next float
+    next_float: (accuracy: @number = 2^32) {
+        seed_s = seedRand
+        next = (max: @number = 2^32) {
+            a = 1664525
+            c = 1013904223
+            seedRand = (a * seedRand + c) % max
+            return seedRand
+        }
+        s = next(accuracy) / accuracy
+        seedRand = seed_s
+        return s
+    },
+    // set seed
+    set_seed: (seed: @number) {
+        seedRand = seed
+    },
+    // return seed
+    get_seed: () {
+        return seedRand
+    },
+}
+math = {
+    // clamp
+    clamp: (number: @number, min_: @number = 0, max_: @number = 1) {
+        return min(max(number,min_),max_)
+    },
+    // idk what this does but whatever imma still add it
+    wrap: (number: @number, min_: @number = 0, max_: @number = 1) {
+        return ((number - min_) % (max_ - min_)) + min_
+    },
+    // linear interpolation
+    lerp: (a: @number, b: @number, f: @number = 0.5)
+    {
+        return a + f * (b - a)
+    },
+    // cubic interpolation
+    cerp: (y0: @number, y1: @number, y2: @number, y3: @number, mul: @number = 1) {
+        let a0 = 0
+        let a1 = 0
+        let a2 = 0
+        let a3 = 0
+        let mu2 = 0
+
+        mu2 = mul ^ 2;
+        a0 = y3 - y2 - y0 + y1
+        a1 = y0 - y1 - a0
+        a2 = y2 - y0
+        a3 = y1
+
+        return a0 * mul * mu2 + a1 * mu2 + a2 * mu + a3
+    },
+    //rounds number to the nearest whole (or decimal places)
+    round = (number: @number, decimal_places: @number = 0) {
+        multiplier = 10 ^ decimal_places
+        return $.round(number * multiplier) / multiplier
+    }
+}
+
+// 1d terrain gen
+sine_terrain = (seed: @number, res: @number, intensity: @number = 2, lerpamt: @number = 8) {
+    seed_s = seed
+    let pixels = []
+    let upscaled = []
+    random.set_seed(seed)
+    pixels.push(math.clamp((($.sin(intensity) + $.sin(random.next_float())) + 1.5 ) / 4))
+    upscaled.push(math.clamp(math.lerp(pixels[0], pixels[0], 0 / lerpamt)))
+    for x in 2..res+2 {
+        pixels.push(math.clamp((($.sin(intensity * x) + $.sin(random.next_float() * x)) + 1.5 ) / 4))
+        for i in 1..lerpamt+1 {
+            upscaled.push(math.clamp(math.lerp(pixels[x-2], pixels[x-1], i / lerpamt)))
+        }
+    }
+    random.set_seed(seed_s)
+    return [pixels, upscaled]
+}
+
+// add objects in bulk
+bulk_objects = (array: @array, start_x: @number = 0, start_y: @number = 0, obj_id: @number = 1) { 
+    for i in 0..array.length {
+        if array[i].type == @number {
+            add(obj{
+                OBJ_ID: obj_id,
+                X: 15 + i * 30 + start_x,
+                Y: 15 + array[i] * 30 + start_y,
+            })
+        } else {
+            throw "Argument must be a number or an array not " + array[i].type as @string
+        }
+    }
+}
+
+
+return {
+    prandom: random,
+    math: math,
+    sine_terrain: sine_terrain,
+    bulk_add_objects: bulk_objects,
+}
+
+
