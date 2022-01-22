@@ -1,5 +1,5 @@
-# uTLFN
-some kinda useful functions that arent in spwn v.0.7 and under
+# UTLT
+some kind of useful functions that arent in spwn v.0.7 and under
 
 # functions
 `random` - pseudo random number generator
